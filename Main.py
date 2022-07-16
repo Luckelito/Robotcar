@@ -108,12 +108,12 @@ def main():
                         left_speed = 100 - (joystick_x_value / math.sqrt(50)) ** 2
                         if left_speed > 0:
                             #print("Left", 100 - left_speed)
- #                           RF_pwm.ChangeDutyCycle(100 - left_speed)
- #                           RB_pwm.ChangeDutyCycle(100)
+                            LF_pwm.ChangeDutyCycle(100 - left_speed)
+                            LB_pwm.ChangeDutyCycle(100)
                         else:
                             #print("Left", -(100 + left_speed))
- #                           RF_pwm.ChangeDutyCycle(100 + left_speed)
- #                           RB_pwm.ChangeDutyCycle(100)
+                            LF_pwm.ChangeDutyCycle(100 + left_speed)
+                            LB_pwm.ChangeDutyCycle(100)
 
             elif event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 11: # Use menu button to terminate program
