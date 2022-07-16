@@ -1,5 +1,5 @@
 import pygame
-import time
+import math
 import RPi.GPIO as GPIO
 
 def cable_on(curr_cable):
@@ -24,11 +24,15 @@ def main():
     shoot_cable = 40
 
     GPIO.setup(LF_cable, GPIO.OUT)
+    GPIO.setup(LB_cable, GPIO.OUT)
     GPIO.setup(RF_cable, GPIO.OUT)
+    GPIO.setup(RB_cable, GPIO.OUT)
     GPIO.setup(rev_gun_cable, GPIO.OUT)
     GPIO.setup(shoot_cable, GPIO.OUT)
     LF_pwm = GPIO.PWM(LF_cable, 100)
+    LB_pwm = GPIO.PWM(LF_cable, 100)
     RF_pwm = GPIO.PWM(RF_cable, 100)
+    RB_pwm = GPIO.PWM(RF_cable, 100)
 
     # for al the connected joysticks
     for i in range(0, pygame.joystick.get_count()):
@@ -40,33 +44,98 @@ def main():
         print ("Detected joystick "),joysticks[-1].get_name(),"'"
 
     LF_pwm.start(100)
+    LB_pwm.start(100)
     RF_pwm.start(100)
+    RB_pwm.start(100)
+
+    joystick_x_value = 0
+    joystick_y_value = 0
     while keep_playing:    
         clock.tick(60)
         for event in pygame.event.get():
-            if event.type == 7: # Axis event
-                if event.axis == 5:
-                    LF_pwm.ChangeDutyCycle(100 - (int(event.value * 100) / 100 * 50 + 50))
-                if event.axis == 4:
-                    RF_pwm.ChangeDutyCycle(100 - (int(event.value * 100) / 100 * 50 + 50))
+            if event.type == pygame.JOYAXISMOTION: 
+                if event.axis == 0: # Joystick x-axis
+                    joystick_x_value = round(event.value, 2) * 100
+                if event.axis == 1: # Joystick y-axis
+                    joystick_y_value = round(event.value, 2) * 100
+                if event.axis == 0 or event.axis == 1:
+                    if joystick_x_value >= 0 and joystick_y_value < 0: # first quadrant
+                        #print("Left", 0)
+                        LF_pwm.ChangeDutyCycle(0)
+                        LB_pwm.ChangeDutyCycle(100)
+                        right_speed = 100 - (joystick_x_value / math.sqrt(50)) ** 2
+                        if right_speed > 0:
+                            #print("Right", 100 - right_speed)
+                            RF_pwm.ChangeDutyCycle(100 - right_speed)
+                            RB_pwm.ChangeDutyCycle(100)
+                        else:
+                            #print("Right", -(100 + right_speed))
+                            RF_pwm.ChangeDutyCycle(100 + right_speed)
+                            RB_pwm.ChangeDutyCycle(100)
 
-            elif event.type == 10:
+                    elif joystick_x_value >= 0 and joystick_y_value >= 0: # second quadrant
+                        #print("Right", "-0")
+                        RB_pwm.ChangeDutyCycle(0)
+                        RF_pwm.ChangeDutyCycle(100)
+                        left_speed = -(100 - (joystick_x_value / math.sqrt(50)) ** 2)
+                        if left_speed > 0:
+                            #print("Left", 100 - left_speed)
+                            LF_pwm.ChangeDutyCycle(100 - left_speed)
+                            LB_pwm.ChangeDutyCycle(100)
+                        else:
+                            #print("Left", -(100 + left_speed))
+                            LF_pwm.ChangeDutyCycle(100 + left_speed)
+                            LB_pwm.ChangeDutyCycle(100)
+
+                    elif joystick_x_value < 0 and joystick_y_value >= 0: # third quadrant
+                        #print("Left", "-0")
+                        LB_pwm.ChangeDutyCycle(0)
+                        LF_pwm.ChangeDutyCycle(100)
+                        right_speed = -(100 - (joystick_x_value / math.sqrt(50)) ** 2)
+                        if right_speed > 0:
+                            #print("Right", 100 - right_speed)
+                            RF_pwm.ChangeDutyCycle(100 - left_speed)
+                            RB_pwm.ChangeDutyCycle(100)
+                        else:
+                            #print("Right", -(100 + right_speed))
+                            RF_pwm.ChangeDutyCycle(100 + left_speed)
+                            RB_pwm.ChangeDutyCycle(100)
+
+                    elif joystick_x_value < 0 and joystick_y_value < 0: # forth quadrant
+                        #print("Right", 0)
+                        RF_pwm.ChangeDutyCycle(0)
+                        RB_pwm.ChangeDutyCycle(100)
+                        left_speed = 100 - (joystick_x_value / math.sqrt(50)) ** 2
+                        if left_speed > 0:
+                            #print("Left", 100 - left_speed)
+ #                           RF_pwm.ChangeDutyCycle(100 - left_speed)
+ #                           RB_pwm.ChangeDutyCycle(100)
+                        else:
+                            #print("Left", -(100 + left_speed))
+ #                           RF_pwm.ChangeDutyCycle(100 + left_speed)
+ #                           RB_pwm.ChangeDutyCycle(100)
+
+            elif event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 11: # Use menu button to terminate program
                     keep_playing = False
                 if event.button == 0: # A button
-                    cable_on(rev_gun_cable)
+                    print("A")
+  #                  cable_on(rev_gun_cable)
                 if event.button == 1: # B button
-                    cable_on(shoot_cable)
+                    print("B")
+   #                 cable_on(shoot_cable)
 
-            elif event.type == 11: 
+            elif event.type == pygame.JOYBUTTONUP: 
                 if event.button == 0: # A button
-                    cable_off(rev_gun_cable)
+                    pass
+    #                cable_off(rev_gun_cable)
                 if event.button == 1: # B button
-                    cable_off(shoot_cable)
+                    pass
+     #               cable_off(shoot_cable)
                     
 if __name__ == "__main__":
     try:
         main()
     finally:
         print("Cleanup")
-        GPIO.cleanup()
+        #GPIO.cleanup()
